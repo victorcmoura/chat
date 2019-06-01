@@ -19,7 +19,7 @@
 
 struct mq_attr attr;
 
-char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat_";
+char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat-";
 
 void clear_stdin(void){
     int c;
@@ -71,18 +71,66 @@ void print_menu_options(){
     printf("\t3 - Exit\n");
 }
 
+char* choose_queue(){
+    char* options[100] = {0};
+    
+    FILE* fp;
+    fp = popen("ls /dev/mqueue", "r");
+
+    if (fp == NULL) {
+        printf("Something wrong happened. Try again later.\n" );
+        exit(1);
+    }
+
+    printf("Online queues (pick one):\n");
+
+    int index = 1;
+    while(1){
+        char* buffer = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+        buffer[0] = '/';
+        if(fgets(buffer+1, MAX_QUEUE_NAME_SIZE - 6, fp) != NULL){
+            remove_line_breaks(buffer, MAX_QUEUE_NAME_SIZE);
+            printf("\t%d - [%s]\n", index, buffer);
+            options[index++] = buffer;
+        }else{
+            index--;
+            free(buffer);
+            break;
+        }
+    }
+
+    printf("\t%d - Exit\n", index+1);
+
+    int option;
+    do{
+        printf(">> ");
+        scanf("%d", &option);
+    }while(option < 1 || option > index+1);
+
+    int i;
+    for(i = 1; i<= index; i++){
+        if(i != option){
+            free(options[i]);
+        }
+    }
+    return options[option];
+}
+
 void send_message_menu(){
     system("clear");
 
-    char my_queue_name[MAX_QUEUE_NAME_SIZE] = "/chat_victorcmoura";
+    char* recipient_queue_name = choose_queue();
+
+    clear_stdin();
 
     printf("Chose send message\n");
     
     char buffer[MAX_MESSAGE_SIZE];
     fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-    send_output(buffer, my_queue_name);
+    send_output(buffer, recipient_queue_name);
 
-    printf("Sending message...\n");
+    printf("Sending message to: %s\n", recipient_queue_name);
+    free(recipient_queue_name);
     sleep(1);
 }
 
@@ -136,7 +184,7 @@ void set_queue_name(){
     fp = popen("whoami", "r");
 
     if (fp == NULL) {
-        printf("Failed to run command\n" );
+        printf("Something wrong happened. Try again later.\n" );
         exit(1);
     }
 
