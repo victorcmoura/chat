@@ -103,22 +103,24 @@ void main_menu(){
         system("clear");
         print_menu_options();
 
+        system ("stty raw");
         int option;
-        scanf("%d", &option);
-
-        while(option != 1 && option != 2 && option != 3){
+        do{
+            option = getchar();
+            if(option >= '1' && option <= '3'){
+                break;
+            }
             printf("Invalid option =( Try again\n");
-            scanf("%d", &option);
-        }
+        }while(1);
+        system ("stty cooked");
 
-        clear_stdin();
         system("clear");
         
-        if(option == 1){
+        if(option == '1'){
             send_message_menu();
-        }else if(option == 2){
+        }else if(option == '2'){
             read_message_menu();
-        }else if(option == 3){
+        }else if(option == '3'){
             system("clear");
             printf("Exiting...\n");
             sleep(2);
@@ -144,7 +146,6 @@ void set_queue_name(){
 }
 
 int main(void){
-    int exit = 0;
     set_queue_name();
     create_client_queue(queue_name);
     main_menu();
