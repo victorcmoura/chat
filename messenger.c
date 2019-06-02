@@ -21,8 +21,34 @@ struct mq_attr attr;
 
 char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat-";
 
-void format_into_message_protocol(char* to, char* message){
-    
+void format_into_message_protocol(char* final_message, char* to, char* message){
+    char marker[2] = ":";
+    strcat(final_message, &queue_name[6]);
+    strcat(final_message, marker);
+    strcat(final_message, &to[6]);
+    strcat(final_message, marker);
+    strcat(final_message, message);
+}
+
+void unformat_from_message_protocol(char* decoded, char* message){
+    char aux = 0;
+    int d = 0, m = 0, unwanted_chars = -1;
+
+    do{
+        if(unwanted_chars < 0){
+            aux = message[m++];
+            if(aux == ':'){
+                unwanted_chars *= -1; 
+            }
+            decoded[d++] = aux;
+        }else{
+            aux = message[m++];
+            if(aux == ':'){
+                unwanted_chars *= -1;
+                decoded[d++] = ' ';
+            }
+        }
+    }while(aux != 0);
 }
 
 void clear_stdin(void){
@@ -129,9 +155,11 @@ void send_message_menu(){
 
     printf("Chose send message\n");
     
-    char buffer[MAX_MESSAGE_SIZE];
+    char buffer[MAX_MESSAGE_SIZE] = {0};
+    char final_message[MAX_MESSAGE_SIZE] = {0};
     fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-    send_output(buffer, recipient_queue_name);
+    format_into_message_protocol(final_message, recipient_queue_name, buffer);
+    send_output(final_message, recipient_queue_name);
 
     printf("Sending message to: %s\n", recipient_queue_name);
     free(recipient_queue_name);
@@ -142,10 +170,12 @@ void read_message_menu(){
     system("clear");
     
     char buffer[MAX_MESSAGE_SIZE];
+    char final_message[MAX_MESSAGE_SIZE];
     receive_input(buffer);
+    unformat_from_message_protocol(final_message, buffer);
     
     printf("Message 1:\n");
-    printf("\t%s\n", buffer);
+    printf("\t%s\n", final_message);
     printf("Press enter to exit\n");
     clear_stdin();
 }
