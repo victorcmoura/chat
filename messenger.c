@@ -21,6 +21,10 @@ struct mq_attr attr;
 
 char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat-";
 
+void format_into_message_protocol(char* to, char* message){
+    
+}
+
 void clear_stdin(void){
     int c;
     do{
@@ -37,7 +41,7 @@ void remove_line_breaks(char* buffer, int bufferlen){
     }
 }
 
-void create_client_queue(char* queue_name){
+void create_client_queue(){
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_MESSAGE_SIZE;
     attr.mq_flags = 0;
@@ -48,15 +52,15 @@ void create_client_queue(char* queue_name){
     // perror("Closing client queue");
 }
 
-void receive_input(char* msg_buffer, char* queue_name){
+void receive_input(char* msg_buffer){
     mqd_t client_queue = mq_open(queue_name, O_RDONLY, 0666, &attr);
     // perror("Opening client queue");
     mq_receive(client_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
     // perror("Input receiving");
 }
 
-void send_output(char* msg_buffer, char* queue_name){
-    mqd_t peer_queue = mq_open(queue_name, O_WRONLY, 0666, &attr);
+void send_output(char* msg_buffer, char* peer_queue_name){
+    mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0666, &attr);
     // perror("Opening peer queue");
     mq_send(peer_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
     // perror("Sending output");
@@ -138,7 +142,7 @@ void read_message_menu(){
     system("clear");
     
     char buffer[MAX_MESSAGE_SIZE];
-    receive_input(buffer, queue_name);
+    receive_input(buffer);
     
     printf("Message 1:\n");
     printf("\t%s\n", buffer);
@@ -195,7 +199,7 @@ void set_queue_name(){
 
 int main(void){
     set_queue_name();
-    create_client_queue(queue_name);
+    create_client_queue();
     main_menu();
     mq_unlink(queue_name);
     return 0;
