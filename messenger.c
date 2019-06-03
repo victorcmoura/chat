@@ -17,9 +17,33 @@
 #define MAX_USERNAME_SIZE 30
 #define MAX_QUEUE_NAME_SIZE 35
 
+typedef struct {
+    char* msg_buffer;
+    char* peer_queue_name;
+} message_struct;
+
 struct mq_attr attr;
 
 char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat-";
+
+void* send_message_thread(void* args){
+    message_struct* msg_data = args;
+    char* peer_queue_name = msg_data->peer_queue_name;
+    char* msg_buffer = msg_data->msg_buffer;
+    
+    mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0666, &attr);
+    // perror("Opening peer queue");
+    mq_send(peer_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
+    // perror("Sending output");
+    mq_close(peer_queue);
+    // perror("Closing peer queue");
+
+    free(peer_queue_name);
+    free(msg_buffer);
+    free(msg_data);
+
+    pthread_exit(NULL);
+}
 
 void format_into_message_protocol(char* final_message, char* to, char* message){
     char marker[2] = ":";
@@ -86,12 +110,12 @@ void receive_input(char* msg_buffer){
 }
 
 void send_output(char* msg_buffer, char* peer_queue_name){
-    mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0666, &attr);
-    // perror("Opening peer queue");
-    mq_send(peer_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
-    // perror("Sending output");
-    mq_close(peer_queue);
-    // perror("Closing peer queue");
+    message_struct* msg = (message_struct*) malloc(sizeof(message_struct));
+    msg->peer_queue_name = peer_queue_name;
+    msg->msg_buffer = msg_buffer;
+
+    pthread_t send_message_thread_id;
+    pthread_create(&send_message_thread_id, NULL, (void*) send_message_thread, msg);
 }
 
 void print_menu_options(){
@@ -138,7 +162,7 @@ char* choose_queue(){
     }while(option < 1 || option > index+1);
 
     int i;
-    for(i = 1; i<= index; i++){
+    for(i = 1; i< index; i++){
         if(i != option){
             free(options[i]);
         }
@@ -155,14 +179,13 @@ void send_message_menu(){
 
     printf("Chose send message\n");
     
-    char buffer[MAX_MESSAGE_SIZE] = {0};
-    char final_message[MAX_MESSAGE_SIZE] = {0};
+    char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
+    char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
     fgets(buffer, MAX_MESSAGE_SIZE, stdin);
     format_into_message_protocol(final_message, recipient_queue_name, buffer);
     send_output(final_message, recipient_queue_name);
-
     printf("Sending message to: %s\n", recipient_queue_name);
-    free(recipient_queue_name);
+    free(buffer);
     sleep(1);
 }
 
