@@ -40,13 +40,13 @@ unsigned long hash(unsigned char *str){
 
 void map_insert(char* key, char* value){
     int pos = hash(key);
-    printf("%d\n", pos);
+    // printf("%d\n", pos);
     char* permanent_value = (char*) malloc(1000);
 
     strcpy(permanent_value, value);
 
     sem_wait(&map_semaphore);
-    printf("%d\n", *string_map[pos][0]);
+    // printf("%d\n", *string_map[pos][0]);
     char insert_pos = *string_map[pos][0];
     string_map[pos][insert_pos] = permanent_value;
     *string_map[pos][0] += 1;
