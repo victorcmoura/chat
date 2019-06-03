@@ -62,6 +62,11 @@ char** map_get(char* key){
     return ans;    
 }
 
+int len(char* key){
+    char** result = map_get(key);
+    return *result[0];
+}
+
 // TODO: Destroy map
 
 // int destroy_stack(){

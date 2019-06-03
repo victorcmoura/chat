@@ -26,17 +26,17 @@ int main(){
 
     messages = map_get(name1);
     int i;
-    for(i = 1; i < *messages[0]; i++){
+    for(i = 1; i < len(name1); i++){
         printf("%s\n", messages[i]);
     }
     printf("\n");
     messages = map_get(name2);
-    for(i = 1; i < *messages[0]; i++){
+    for(i = 1; i < len(name2); i++){
         printf("%s\n", messages[i]);
     }
     printf("\n");
     messages = map_get(name3);
-    for(i = 1; i < *messages[0]; i++){
+    for(i = 1; i < len(name3); i++){
         printf("%s\n", messages[i]);
     }
 
