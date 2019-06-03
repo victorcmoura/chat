@@ -1,3 +1,3 @@
 #!/bin/sh
 
-gcc -o run -lrt -lpthread messenger.c
+gcc -o run -g -lrt -lpthread messenger.c
