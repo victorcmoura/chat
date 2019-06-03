@@ -11,6 +11,8 @@
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define MAX_MESSAGE_SIZE 522
 #define MAX_QUEUE_SIZE 200
@@ -95,11 +97,12 @@ void create_client_queue(){
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_MESSAGE_SIZE;
     attr.mq_flags = 0;
-
+    mode_t prev_umask = umask(0000);
     mqd_t client_queue = mq_open(queue_name, O_CREAT, 0666, &attr);
     // perror("Opening client queue");
     mq_close(client_queue);
     // perror("Closing client queue");
+    umask(prev_umask);
 }
 
 void receive_input(char* msg_buffer){
