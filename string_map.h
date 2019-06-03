@@ -17,8 +17,10 @@ void init_map(int n_keys, int n_values){
     string_map = (char***) malloc(n_keys * sizeof(char***));
 
     for(i = 0; i < n_keys; i++){
+        char* c = (char*) malloc(sizeof(char));
+        *c = 1;
         string_map[i] = (char**) malloc(n_values * sizeof(char**));
-        string_map[i][0] = (char*) 1;
+        string_map[i][0] = c;
     }
 }
 
@@ -44,10 +46,10 @@ void map_insert(char* key, char* value){
     strcpy(permanent_value, value);
 
     sem_wait(&map_semaphore);
-    printf("%d\n", string_map[pos][0]);
-    int insert_pos = (int) string_map[pos][0];
+    printf("%d\n", *string_map[pos][0]);
+    char insert_pos = *string_map[pos][0];
     string_map[pos][insert_pos] = permanent_value;
-    string_map[pos][0]++;
+    *string_map[pos][0] += 1;
     sem_post(&map_semaphore);
 }
 

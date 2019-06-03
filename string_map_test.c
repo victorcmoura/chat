@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "string_map.h"
+// gcc -g -lpthread -lrt string_map_test.c
 
 int main(){
     char s1[10] = "Ola";
@@ -25,17 +26,17 @@ int main(){
 
     messages = map_get(name1);
     int i;
-    for(i = 1; i < (int) messages[0]; i++){
+    for(i = 1; i < *messages[0]; i++){
         printf("%s\n", messages[i]);
     }
     printf("\n");
     messages = map_get(name2);
-    for(i = 1; i < (int) messages[0]; i++){
+    for(i = 1; i < *messages[0]; i++){
         printf("%s\n", messages[i]);
     }
     printf("\n");
     messages = map_get(name3);
-    for(i = 1; i < (int) messages[0]; i++){
+    for(i = 1; i < *messages[0]; i++){
         printf("%s\n", messages[i]);
     }
 
