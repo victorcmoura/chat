@@ -170,7 +170,7 @@ void create_client_queue(){
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_MESSAGE_SIZE;
     attr.mq_flags = 0;
-    mode_t prev_umask = umask(0000);
+    mode_t prev_umask = umask(0155);
     mqd_t client_queue = mq_open(queue_name, O_CREAT, 0666, &attr);
     // perror("Opening client queue");
     mq_close(client_queue);
