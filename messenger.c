@@ -89,14 +89,42 @@ void receive_input(char* msg_buffer){
     // perror("Input receiving");
 }
 
+void clear_stdin(void){
+    int c;
+    do{
+        c = getchar();
+    }while (c != '\n' && c != EOF);
+}
+
+int is_broadcast(char* msg){
+    int index = 0;
+    while(msg[index] != ':'){
+        index++;
+    }
+    index++;
+    if(msg[index] == 'a' && msg[index+1] == 'l' && msg[index+2] == 'l'){
+        return 1;
+    }
+    return 0;
+}
+
 void* receive_message_thread(void* args){
     while(1){
         char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
+        char temp_final_message[MAX_MESSAGE_SIZE] = {0};
         char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
         receive_input(buffer);
-        unformat_from_message_protocol(final_message, buffer);
+        unformat_from_message_protocol(temp_final_message, buffer);
     
-        char* sender_name = get_sender_queue_name_from_unformatted_message(final_message);
+        char* sender_name = get_sender_queue_name_from_unformatted_message(temp_final_message);
+
+        // strcat(final_message, buffer);
+
+        if(is_broadcast(buffer)){
+            strcat(final_message, "Broadcast from ");
+        }
+
+        strcat(final_message, temp_final_message);
 
         map_insert(sender_name, final_message);
         if(chat_mode && strcmp(sender_name, queue_name) != 0){
@@ -150,13 +178,6 @@ void format_into_message_protocol(char* final_message, char* name, char* msg){
     strcat(final_message, message);
 }
 
-void clear_stdin(void){
-    int c;
-    do{
-        c = getchar();
-    }while (c != '\n' && c != EOF);
-}
-
 void remove_line_breaks(char* buffer, int bufferlen){
     int i;
     for(i = 0; i < bufferlen; i++){
@@ -178,13 +199,46 @@ void create_client_queue(){
     umask(prev_umask);
 }
 
-void send_output(char* msg_buffer, char* peer_queue_name){
-    message_struct* msg = (message_struct*) malloc(sizeof(message_struct));
-    msg->to = peer_queue_name;
-    msg->msg_buffer = msg_buffer;
+FILE* pointer_to_queues(){
+    FILE* fp;
+    fp = popen("ls /dev/mqueue", "r");
 
-    pthread_t send_message_thread_id;
-    pthread_create(&send_message_thread_id, NULL, (void*) send_message_thread, msg);
+    if (fp == NULL) {
+        printf("Something wrong happened. Try again later.\n" );
+        exit(1);
+    }
+    return fp;
+}
+
+void send_output(char* msg_buffer, char* peer_queue_name){
+    if(strcmp(peer_queue_name, "/chat-all") == 0){
+        FILE* fp = pointer_to_queues();
+
+        while(1){
+            char* buffer = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+            buffer[0] = '/';
+            if(fgets(buffer+1, MAX_QUEUE_NAME_SIZE, fp) != NULL){
+                remove_line_breaks(buffer, MAX_QUEUE_NAME_SIZE);
+                message_struct* msg = (message_struct*) malloc(sizeof(message_struct));
+                msg->to = buffer;
+                msg->msg_buffer = msg_buffer;
+
+                pthread_t send_message_thread_id;
+                pthread_create(&send_message_thread_id, NULL, (void*) send_message_thread, msg);
+            }else{
+                free(buffer);
+                break;
+            }
+        }
+
+    }else{
+        message_struct* msg = (message_struct*) malloc(sizeof(message_struct));
+        msg->to = peer_queue_name;
+        msg->msg_buffer = msg_buffer;
+
+        pthread_t send_message_thread_id;
+        pthread_create(&send_message_thread_id, NULL, (void*) send_message_thread, msg);
+    }
 }
 
 void print_menu_options(){
@@ -196,17 +250,19 @@ void print_menu_options(){
 char* choose_queue(){
     char* options[100] = {0};
     
-    FILE* fp;
-    fp = popen("ls /dev/mqueue", "r");
-
-    if (fp == NULL) {
-        printf("Something wrong happened. Try again later.\n" );
-        exit(1);
-    }
+    FILE* fp = pointer_to_queues();
 
     printf("Online queues (pick one):\n");
 
     int index = 1;
+    
+    char all[MAX_QUEUE_NAME_SIZE] = "/chat-all";
+    char* buffer = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+    strcpy(buffer, all);
+    options[index] = buffer;
+
+    printf("\t%d - [%s]\n", index, buffer);
+    index++;
     while(1){
         char* buffer = (char*) malloc(MAX_QUEUE_NAME_SIZE);
         buffer[0] = '/';
@@ -243,27 +299,6 @@ char* choose_queue(){
     return options[option];
 }
 
-void send_message_menu(){
-    system("clear");
-
-    char* recipient_queue_name = choose_queue();
-
-    clear_stdin();
-
-    if(recipient_queue_name != NULL){
-        printf("Chose send message\n");
-    
-        char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
-        char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
-        fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-        format_into_message_protocol(final_message, recipient_queue_name, buffer);
-        send_output(final_message, recipient_queue_name);
-        printf("Sending message to: %s\n", recipient_queue_name);
-        free(buffer);
-        sleep(1);
-    }
-}
-
 void* handle_user_input(){
     input_mode = 0;
     int option;
@@ -292,21 +327,35 @@ void read_message_menu(char* recipient_queue_name){
         system("clear");
         char** messages = map_get(recipient_queue_name);
 
-        print_conversation(recipient_queue_name);
+        if(strcmp("/chat-all", recipient_queue_name)!=0){
+            print_conversation(recipient_queue_name);
+        }else{
+            printf("Press i to type broadcast or esc to exit\n");
+        }
         
         while(1){
             if(input_mode){
                 system("clear");
-                print_conversation(recipient_queue_name);
+                if(strcmp("/chat-all", recipient_queue_name)!=0){
+                    print_conversation(recipient_queue_name);
+                }else{
+                    printf("Type your broadcast\n");
+                }
                 printf(">> ");
                 char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
                 char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
                 fgets(buffer, MAX_MESSAGE_SIZE, stdin);
                 format_into_message_protocol(final_message, recipient_queue_name, buffer);
                 send_output(final_message, recipient_queue_name);
-                pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+                if(strcmp("/chat-all", recipient_queue_name)!=0){
+                    pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+                }
                 system("clear");
-                print_conversation(recipient_queue_name);
+                if(strcmp("/chat-all", recipient_queue_name)==0){
+                    should_quit = 1;
+                }else{
+                    print_conversation(recipient_queue_name);
+                }
             }else if(should_quit){
                 should_quit = 0;
                 break;
