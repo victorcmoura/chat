@@ -13,74 +13,21 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "string_map.h"
 
 #define MAX_MESSAGE_SIZE 522
 #define MAX_QUEUE_SIZE 200
 #define MAX_USERNAME_SIZE 10
 #define MAX_QUEUE_NAME_SIZE 16
 
-typedef struct {
-    char* msg_buffer;
-    char* to;
-} message_struct;
+#include "string_map.h"
+#include "messenger_utils.h"
+#include "gui_utils.h"
 
 struct mq_attr attr;
 
 int input_mode = 0, should_quit = 0, chat_mode = 0;
 
 char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat-";
-
-void unformat_from_message_protocol(char* decoded, char* message){
-    char aux = 0;
-    int d = 0, m = 0, unwanted_chars = -1;
-
-    do{
-        if(unwanted_chars < 0){
-            aux = message[m++];
-            if(aux == ':'){
-                unwanted_chars *= -1; 
-            }
-            decoded[d++] = aux;
-        }else{
-            aux = message[m++];
-            if(aux == ':'){
-                unwanted_chars *= -1;
-                decoded[d++] = ' ';
-            }
-        }
-    }while(aux != 0);
-}
-
-void print_conversation(char* recipient_queue_name){
-    system("clear");
-    char** messages = map_get(recipient_queue_name);
-
-    printf("=====> %s Conversation:\n\n", recipient_queue_name);
-    
-    int i;
-    for(i = 1; i < len(recipient_queue_name); i++){
-        printf("%s\n", messages[i]);
-    }
-
-    printf("\nPress i to enter insert mode or esc to return to chat list\n");
-}
-
-char* get_sender_queue_name_from_unformatted_message(char* message){
-    char chat_label[10] = "/chat-";
-    char* sender_name = (char*) malloc(MAX_QUEUE_NAME_SIZE);
-    sender_name[0] = 0;
-
-    strcat(sender_name, chat_label);
-
-    int i = 0;
-    while(message[i] != ':'){
-        sender_name[i+strlen(chat_label)] = message[i];
-        i++;
-    }
-    sender_name[i+strlen(chat_label)] = 0;
-    return sender_name;
-}
 
 void receive_input(char* msg_buffer){
     mqd_t client_queue = mq_open(queue_name, O_RDONLY, 0666, &attr);
@@ -135,37 +82,6 @@ void* send_message_thread(void* args){
     pthread_exit(NULL);
 }
 
-void format_into_message_protocol(char* final_message, char* name, char* msg){
-    char marker[2] = ":";
-    char to[MAX_QUEUE_NAME_SIZE];
-    char message[MAX_MESSAGE_SIZE];
-
-    strcpy(to, name);
-    strcpy(message, msg);
-
-    strcat(final_message, &queue_name[6]);
-    strcat(final_message, marker);
-    strcat(final_message, &to[6]);
-    strcat(final_message, marker);
-    strcat(final_message, message);
-}
-
-void clear_stdin(void){
-    int c;
-    do{
-        c = getchar();
-    }while (c != '\n' && c != EOF);
-}
-
-void remove_line_breaks(char* buffer, int bufferlen){
-    int i;
-    for(i = 0; i < bufferlen; i++){
-        if(buffer[i] == '\n'){
-            buffer[i] = '\0';
-        }
-    }
-}
-
 void create_client_queue(){
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_MESSAGE_SIZE;
@@ -185,83 +101,6 @@ void send_output(char* msg_buffer, char* peer_queue_name){
 
     pthread_t send_message_thread_id;
     pthread_create(&send_message_thread_id, NULL, (void*) send_message_thread, msg);
-}
-
-void print_menu_options(){
-    printf("Chat (choose an option):\n");
-    printf("\t1 - Enter chat\n");
-    printf("\t2 - Exit\n");
-}
-
-char* choose_queue(){
-    char* options[100] = {0};
-    
-    FILE* fp;
-    fp = popen("ls /dev/mqueue", "r");
-
-    if (fp == NULL) {
-        printf("Something wrong happened. Try again later.\n" );
-        exit(1);
-    }
-
-    printf("Online queues (pick one):\n");
-
-    int index = 1;
-    while(1){
-        char* buffer = (char*) malloc(MAX_QUEUE_NAME_SIZE);
-        buffer[0] = '/';
-        if(fgets(buffer+1, MAX_QUEUE_NAME_SIZE, fp) != NULL){
-            remove_line_breaks(buffer, MAX_QUEUE_NAME_SIZE);
-            printf("\t%d - [%s]\n", index, buffer);
-            options[index++] = buffer;
-        }else{
-            index--;
-            free(buffer);
-            break;
-        }
-    }
-
-    printf("\t%d - Exit\n", index+1);
-
-    int option;
-    do{
-        printf(">> ");
-        scanf("%d", &option);
-    }while(option < 1 || option > index+1);
-
-    int i;
-    for(i = 1; i< index; i++){
-        if(i != option){
-            free(options[i]);
-        }
-    }
-
-    if(option == index+1){
-        return NULL;    
-    }
-
-    return options[option];
-}
-
-void send_message_menu(){
-    system("clear");
-
-    char* recipient_queue_name = choose_queue();
-
-    clear_stdin();
-
-    if(recipient_queue_name != NULL){
-        printf("Chose send message\n");
-    
-        char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
-        char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
-        fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-        format_into_message_protocol(final_message, recipient_queue_name, buffer);
-        send_output(final_message, recipient_queue_name);
-        printf("Sending message to: %s\n", recipient_queue_name);
-        free(buffer);
-        sleep(1);
-    }
 }
 
 void* handle_user_input(){
@@ -302,7 +141,7 @@ void read_message_menu(char* recipient_queue_name){
                 char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
                 char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
                 fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-                format_into_message_protocol(final_message, recipient_queue_name, buffer);
+                format_into_message_protocol(final_message, recipient_queue_name, buffer, queue_name);
                 send_output(final_message, recipient_queue_name);
                 pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
                 system("clear");

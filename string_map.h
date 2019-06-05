@@ -1,5 +1,5 @@
-#ifndef STACK_H
-#define STACK_H
+#ifndef STRING_MAP_H
+#define STRING_MAP_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <semaphore.h>
