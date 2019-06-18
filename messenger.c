@@ -26,6 +26,7 @@
 struct mq_attr attr;
 
 int input_mode = 0, should_quit = 0, chat_mode = 0;
+char current_chat[MAX_QUEUE_NAME_SIZE] = {0};
 
 char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat-";
 
@@ -46,7 +47,7 @@ void* receive_message_thread(void* args){
         char* sender_name = get_sender_queue_name_from_unformatted_message(final_message);
 
         map_insert(sender_name, final_message);
-        if(chat_mode && strcmp(sender_name, queue_name) != 0){
+        if(chat_mode && strcmp(sender_name, queue_name) != 0 && strcmp(sender_name, current_chat) == 0){
             system("clear");
             print_conversation(sender_name);
         }
@@ -125,6 +126,7 @@ void* handle_user_input(){
 void read_message_menu(char* recipient_queue_name){
     if(recipient_queue_name != NULL){
         chat_mode = 1;
+        strcpy(current_chat, recipient_queue_name);
         pthread_t handle_user_input_thread_id;
         pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
         
