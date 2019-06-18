@@ -84,7 +84,7 @@ map_insert("victorcmoura", "message one");
 char** victorcmoura_messages = map_get("victorcmoura");
 
 int i;
-for(i = 1; i < len(name1); i++){
+for(i = 1; i < len("victorcmoura"); i++){
     printf("%s\n", messages[i]);
 }
 ```
