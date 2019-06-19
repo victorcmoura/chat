@@ -125,37 +125,71 @@ void* handle_user_input(){
 
 void read_message_menu(char* recipient_queue_name){
     if(recipient_queue_name != NULL){
-        chat_mode = 1;
-        strcpy(current_chat, recipient_queue_name);
-        pthread_t handle_user_input_thread_id;
-        pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
-        
-        system("clear");
-        char** messages = map_get(recipient_queue_name);
+        if(strcmp(recipient_queue_name, "broad_to_all") == 0){
+            pthread_t handle_user_input_thread_id;
+            pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+            
+            system("clear");
+            
+            print_broadcast_gui();
 
-        print_conversation(recipient_queue_name);
-        
-        while(1){
-            if(input_mode){
-                system("clear");
-                print_conversation(recipient_queue_name);
-                printf(">> ");
-                char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
-                char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
-                fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-                format_into_message_protocol(final_message, recipient_queue_name, buffer, queue_name);
-                send_output(final_message, recipient_queue_name);
-                pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
-                system("clear");
-                print_conversation(recipient_queue_name);
-            }else if(should_quit){
-                should_quit = 0;
-                break;
-            }
-            sleep(0.5);
-        }        
-    }
-    chat_mode = 0;
+            while(1){
+                if(input_mode){
+                    system("clear");
+                    print_broadcast_gui();
+                    printf(">> ");
+                    char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
+                    char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                    fgets(buffer, MAX_MESSAGE_SIZE, stdin);
+                    format_into_broadcast_protocol(final_message, buffer, queue_name);
+
+                    char** online_queues = get_online_queues();
+                    int i;
+                    for(i = 0; strlen(online_queues[i]) > i; i++){
+                        send_output(final_message, online_queues[i]);
+                    }
+                    
+                    pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+                    system("clear");
+                    break;
+                }else if(should_quit){
+                    should_quit = 0;
+                    break;
+                }
+                sleep(0.5);
+            }        
+        }else{
+            chat_mode = 1;
+            strcpy(current_chat, recipient_queue_name);
+            pthread_t handle_user_input_thread_id;
+            pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+            
+            system("clear");
+
+            print_conversation(recipient_queue_name);
+            
+            while(1){
+                if(input_mode){
+                    system("clear");
+                    print_conversation(recipient_queue_name);
+                    printf(">> ");
+                    char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
+                    char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                    fgets(buffer, MAX_MESSAGE_SIZE, stdin);
+                    format_into_message_protocol(final_message, recipient_queue_name, buffer, queue_name);
+                    send_output(final_message, recipient_queue_name);
+                    pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+                    system("clear");
+                    print_conversation(recipient_queue_name);
+                }else if(should_quit){
+                    should_quit = 0;
+                    break;
+                }
+                sleep(0.5);
+            }        
+        }
+        chat_mode = 0;
+    }   
 }
 
 void pre_message_menu(){
