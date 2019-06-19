@@ -15,7 +15,7 @@
     - Chat nickname is the user's unix username
 
 ## Known issues
-- When a user A is chatting with user B and user B becomes offline (the queue is deleted), if chat A don't close the current chat window, it will be possible to send a message to an unexistant queue
+- ~When a user A is chatting with user B and user B becomes offline (the queue is deleted), if chat A don't close the current chat window, it will be possible to send a message to an unexistant queue~ (FIXED)
 - If another user chooses the same username as the user's unix username, it is not possible to choose another
 - Message broadcasting was 90% implemented but, due to a segfault bug occurring in the GUI thread, it was not released on this checkpoint
 
@@ -84,7 +84,7 @@ map_insert("victorcmoura", "message one");
 char** victorcmoura_messages = map_get("victorcmoura");
 
 int i;
-for(i = 1; i < len(name1); i++){
+for(i = 1; i < len("victorcmoura"); i++){
     printf("%s\n", messages[i]);
 }
 ```
