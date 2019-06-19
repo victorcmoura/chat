@@ -45,7 +45,6 @@ void* receive_message_thread(void* args){
         unformat_from_message_protocol(final_message, buffer);
     
         char* sender_name = get_sender_queue_name_from_unformatted_message(final_message);
-
         map_insert(sender_name, final_message);
         if(chat_mode && strcmp(sender_name, queue_name) != 0 && strcmp(sender_name, current_chat) == 0){
             system("clear");
@@ -63,7 +62,7 @@ void* send_message_thread(void* args){
 
     msg_buffer[strlen(msg_buffer)-1] = 0;
     
-    mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0666, &attr);
+    mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0622, &attr);
     // perror("Opening peer queue");
     mq_send(peer_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
     // perror("Sending output");
@@ -148,8 +147,6 @@ void read_message_menu(char* recipient_queue_name){
                     for(i = 0; strlen(online_queues[i]) > i; i++){
                         send_output(final_message, online_queues[i]);
                     }
-                    
-                    pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
                     system("clear");
                     break;
                 }else if(should_quit){
