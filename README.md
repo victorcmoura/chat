@@ -1,6 +1,6 @@
 # Chat with POSIX mqueues
 
-## Checkpoint 1 (06/04/2019)
+## Checkpoint 1 (Jun, 4th - 2019)
 
 ### Implements
 - Interactive GUI
@@ -13,6 +13,7 @@
     - User to user messaging
     - Due to the GUI, it is hard to send a message to an unexistant queue (there is a specific situation when this can occur)
     - Chat nickname is the user's unix username
+    - Broadcast a message to all users (Jul, 10th - 2019)
 
 ## Known issues
 - ~When a user A is chatting with user B and user B becomes offline (the queue is deleted), if chat A don't close the current chat window, it will be possible to send a message to an unexistant queue~ (FIXED)
