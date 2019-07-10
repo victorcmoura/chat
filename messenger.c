@@ -42,9 +42,24 @@ void* receive_message_thread(void* args){
         char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
         char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
         receive_input(buffer);
+        
+        printf("[%s]\n", buffer);
+
+        int is_broad = 0;
+
+        if(is_broadcast(buffer)){
+            is_broad = 1;
+        }
+
         unformat_from_message_protocol(final_message, buffer);
     
         char* sender_name = get_sender_queue_name_from_unformatted_message(final_message);
+
+        if(is_broad){
+            char tmp[MAX_MESSAGE_SIZE] = "Broadcast from ";
+            strcat(tmp, final_message);
+            strcpy(final_message, tmp);
+        }
 
         map_insert(sender_name, final_message);
         if(chat_mode && strcmp(sender_name, queue_name) != 0 && strcmp(sender_name, current_chat) == 0){
@@ -63,7 +78,7 @@ void* send_message_thread(void* args){
 
     msg_buffer[strlen(msg_buffer)-1] = 0;
     
-    mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0666, &attr);
+    mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0622, &attr);
     // perror("Opening peer queue");
     mq_send(peer_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
     // perror("Sending output");
@@ -125,37 +140,69 @@ void* handle_user_input(){
 
 void read_message_menu(char* recipient_queue_name){
     if(recipient_queue_name != NULL){
-        chat_mode = 1;
-        strcpy(current_chat, recipient_queue_name);
-        pthread_t handle_user_input_thread_id;
-        pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
-        
-        system("clear");
-        char** messages = map_get(recipient_queue_name);
+        if(strcmp(recipient_queue_name, "broad_to_all") == 0){
+            pthread_t handle_user_input_thread_id;
+            pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+            
+            system("clear");
+            
+            print_broadcast_gui();
 
-        print_conversation(recipient_queue_name);
-        
-        while(1){
-            if(input_mode){
-                system("clear");
-                print_conversation(recipient_queue_name);
-                printf(">> ");
-                char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
-                char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
-                fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-                format_into_message_protocol(final_message, recipient_queue_name, buffer, queue_name);
-                send_output(final_message, recipient_queue_name);
-                pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
-                system("clear");
-                print_conversation(recipient_queue_name);
-            }else if(should_quit){
-                should_quit = 0;
-                break;
-            }
-            sleep(0.5);
-        }        
-    }
-    chat_mode = 0;
+            while(1){
+                if(input_mode){
+                    system("clear");
+                    print_broadcast_gui();
+                    printf(">> ");
+                    char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
+                    fgets(buffer, MAX_MESSAGE_SIZE, stdin);
+
+                    char** online_queues = get_online_queues();
+                    int i;
+                    for(i = 0; strlen(online_queues[i]) > i; i++){
+                        char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                        format_into_broadcast_protocol(final_message, buffer, queue_name);
+                        send_output(final_message, online_queues[i]);
+                    }
+                    system("clear");
+                    break;
+                }else if(should_quit){
+                    should_quit = 0;
+                    break;
+                }
+                sleep(0.5);
+            }        
+        }else{
+            chat_mode = 1;
+            strcpy(current_chat, recipient_queue_name);
+            pthread_t handle_user_input_thread_id;
+            pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+            
+            system("clear");
+
+            print_conversation(recipient_queue_name);
+            
+            while(1){
+                if(input_mode){
+                    system("clear");
+                    print_conversation(recipient_queue_name);
+                    printf(">> ");
+                    char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
+                    char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                    fgets(buffer, MAX_MESSAGE_SIZE, stdin);
+                    format_into_message_protocol(final_message, recipient_queue_name, buffer, queue_name);
+                    send_output(final_message, recipient_queue_name);
+                    pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
+                    system("clear");
+                    print_conversation(recipient_queue_name);
+                }else if(should_quit){
+                    should_quit = 0;
+                    break;
+                }
+                sleep(0.5);
+            }        
+        }
+        chat_mode = 0;
+    }   
 }
 
 void pre_message_menu(){

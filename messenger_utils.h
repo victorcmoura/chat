@@ -6,6 +6,18 @@ typedef struct {
     char* to;
 } message_struct;
 
+int is_broadcast(char* msg){
+    int index = 0;
+    while(msg[index] != ':'){
+        index++;
+    }
+    index++;
+    if(msg[index] == 'a' && msg[index+1] == 'l' && msg[index+2] == 'l'){
+        return 1;
+    }
+    return 0;
+}
+
 void unformat_from_message_protocol(char* decoded, char* message){
     char aux = 0;
     int d = 0, m = 0, unwanted_chars = -1;
@@ -42,6 +54,21 @@ void format_into_message_protocol(char* final_message, char* name, char* msg, ch
     strcat(final_message, message);
 }
 
+void format_into_broadcast_protocol(char* final_message, char* msg, char* queue_name){
+    char marker[2] = ":";
+    char to[MAX_QUEUE_NAME_SIZE];
+    char message[MAX_MESSAGE_SIZE];
+
+    strcpy(to, "/chat-all");
+    strcpy(message, msg);
+
+    strcat(final_message, &queue_name[6]);
+    strcat(final_message, marker);
+    strcat(final_message, &to[6]);
+    strcat(final_message, marker);
+    strcat(final_message, message);
+}
+
 char* get_sender_queue_name_from_unformatted_message(char* message){
     char chat_label[10] = "/chat-";
     char* sender_name = (char*) malloc(MAX_QUEUE_NAME_SIZE);
@@ -65,6 +92,34 @@ void remove_line_breaks(char* buffer, int bufferlen){
             buffer[i] = '\0';
         }
     }
+}
+
+char** get_online_queues(){
+    char** options = (char**) malloc(100);
+
+    FILE* fp;
+    fp = popen("ls /dev/mqueue", "r");
+
+    if (fp == NULL) {
+        printf("Something wrong happened. Try again later.\n" );
+        exit(1);
+    }
+
+    int index = 0;
+    while(1){
+        char* buffer = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+        buffer[0] = '/';
+        if(fgets(buffer+1, MAX_QUEUE_NAME_SIZE, fp) != NULL){
+            remove_line_breaks(buffer, MAX_QUEUE_NAME_SIZE);
+            options[index++] = buffer;
+        }else{
+            buffer[0] = 0;
+            options[index] = buffer;
+            break;
+        }
+    }
+
+    return options;
 }
 
 #endif

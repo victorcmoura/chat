@@ -1,5 +1,6 @@
 #ifndef GUI_UTILS_H
 #define GUI_UTILS_H
+#include "messenger_utils.h"
 
 void print_conversation(char* recipient_queue_name){
     system("clear");
@@ -11,6 +12,14 @@ void print_conversation(char* recipient_queue_name){
     for(i = 1; i < len(recipient_queue_name); i++){
         printf("%s\n", messages[i]);
     }
+
+    printf("\nPress i to enter insert mode or esc to return to chat list\n");
+}
+
+void print_broadcast_gui(){
+    system("clear");
+
+    printf("=====> Sending broadcast:\n\n");
 
     printf("\nPress i to enter insert mode or esc to return to chat list\n");
 }
@@ -29,53 +38,40 @@ void print_menu_options(){
 }
 
 char* choose_queue(){
-    char* options[100] = {0};
-    
-    FILE* fp;
-    fp = popen("ls /dev/mqueue", "r");
-
-    if (fp == NULL) {
-        printf("Something wrong happened. Try again later.\n" );
-        exit(1);
-    }
+    char** options = get_online_queues();
 
     printf("Online queues (pick one):\n");
 
-    int index = 1;
-    while(1){
-        char* buffer = (char*) malloc(MAX_QUEUE_NAME_SIZE);
-        buffer[0] = '/';
-        if(fgets(buffer+1, MAX_QUEUE_NAME_SIZE, fp) != NULL){
-            remove_line_breaks(buffer, MAX_QUEUE_NAME_SIZE);
-            printf("\t%d - [%s]\n", index, buffer);
-            options[index++] = buffer;
-        }else{
-            index--;
-            free(buffer);
-            break;
-        }
+    int index = 0;
+    for(index = 0; strlen(options[index]) > 0; index++){
+        printf("\t%d - [%s]\n", index+1, options[index]);
     }
 
-    printf("\t%d - Exit\n", index+1);
+    printf("\t%d - Broadcast to all\n", index+1);
+    printf("\t%d - Exit\n", index+2);
 
     int option;
     do{
         printf(">> ");
         scanf("%d", &option);
-    }while(option < 1 || option > index+1);
+    }while(option < 1 || option > index+2);
 
     int i;
-    for(i = 1; i< index; i++){
-        if(i != option){
+    for(i = 0; strlen(options[i]) > 0; i++){
+        if(i+1 != option){
             free(options[i]);
         }
     }
 
     if(option == index+1){
-        return NULL;    
+        char* broadcast = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+        strcpy(broadcast, "broad_to_all");
+        return broadcast;
+    }else if(option == index+2){
+        return NULL;
     }
 
-    return options[option];
+    return options[option-1];
 }
 
 #endif
