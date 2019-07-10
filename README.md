@@ -17,7 +17,7 @@
 ## Known issues
 - ~When a user A is chatting with user B and user B becomes offline (the queue is deleted), if chat A don't close the current chat window, it will be possible to send a message to an unexistant queue~ (FIXED)
 - If another user chooses the same username as the user's unix username, it is not possible to choose another
-- Message broadcasting was 90% implemented but, due to a segfault bug occurring in the GUI thread, it was not released on this checkpoint
+- ~Message broadcasting was 90% implemented but, due to a segfault bug occurring in the GUI thread, it was not released on this checkpoint~ (FIXED)
 
 ## Challenges with threading
 - User input thread
