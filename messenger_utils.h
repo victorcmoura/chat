@@ -1,6 +1,11 @@
 #ifndef MESSENGER_UTILS_H
 #define MESSENGER_UTILS_H
 
+#define MAX_MESSAGE_SIZE 522
+#define MAX_QUEUE_SIZE 200
+#define MAX_USERNAME_SIZE 10
+#define MAX_QUEUE_NAME_SIZE 16
+
 typedef struct {
     char* msg_buffer;
     char* to;
@@ -83,6 +88,19 @@ char* get_sender_queue_name_from_unformatted_message(char* message){
     }
     sender_name[i+strlen(chat_label)] = 0;
     return sender_name;
+}
+
+int is_channel_name(char* name){
+    char channel[] = "/canal";
+
+    int i;
+    for(i = 0; i < strlen(channel); i++){
+        if(channel[i] != name[i]){
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 void remove_line_breaks(char* buffer, int bufferlen){
