@@ -6,6 +6,18 @@ typedef struct {
     char* to;
 } message_struct;
 
+int is_broadcast(char* msg){
+    int index = 0;
+    while(msg[index] != ':'){
+        index++;
+    }
+    index++;
+    if(msg[index] == 'a' && msg[index+1] == 'l' && msg[index+2] == 'l'){
+        return 1;
+    }
+    return 0;
+}
+
 void unformat_from_message_protocol(char* decoded, char* message){
     char aux = 0;
     int d = 0, m = 0, unwanted_chars = -1;
@@ -47,7 +59,7 @@ void format_into_broadcast_protocol(char* final_message, char* msg, char* queue_
     char to[MAX_QUEUE_NAME_SIZE];
     char message[MAX_MESSAGE_SIZE];
 
-    strcpy(to, "all");
+    strcpy(to, "/chat-all");
     strcpy(message, msg);
 
     strcat(final_message, &queue_name[6]);

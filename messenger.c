@@ -42,9 +42,25 @@ void* receive_message_thread(void* args){
         char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
         char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
         receive_input(buffer);
+        
+        printf("[%s]\n", buffer);
+
+        int is_broad = 0;
+
+        if(is_broadcast(buffer)){
+            is_broad = 1;
+        }
+
         unformat_from_message_protocol(final_message, buffer);
     
         char* sender_name = get_sender_queue_name_from_unformatted_message(final_message);
+
+        if(is_broad){
+            char tmp[MAX_MESSAGE_SIZE] = "Broadcast from ";
+            strcat(tmp, final_message);
+            strcpy(final_message, tmp);
+        }
+
         map_insert(sender_name, final_message);
         if(chat_mode && strcmp(sender_name, queue_name) != 0 && strcmp(sender_name, current_chat) == 0){
             system("clear");
@@ -76,8 +92,8 @@ void* send_message_thread(void* args){
         map_insert(peer_queue_name, buffer);
     }
 
-    // free(msg_buffer);
-    // free(msg_data);
+    free(msg_buffer);
+    free(msg_data);
 
     pthread_exit(NULL);
 }
@@ -138,13 +154,13 @@ void read_message_menu(char* recipient_queue_name){
                     print_broadcast_gui();
                     printf(">> ");
                     char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
-                    char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
                     fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-                    format_into_broadcast_protocol(final_message, buffer, queue_name);
 
                     char** online_queues = get_online_queues();
                     int i;
                     for(i = 0; strlen(online_queues[i]) > i; i++){
+                        char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                        format_into_broadcast_protocol(final_message, buffer, queue_name);
                         send_output(final_message, online_queues[i]);
                     }
                     system("clear");
