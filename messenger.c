@@ -76,8 +76,8 @@ void* send_message_thread(void* args){
         map_insert(peer_queue_name, buffer);
     }
 
-    free(msg_buffer);
-    free(msg_data);
+    // free(msg_buffer);
+    // free(msg_data);
 
     pthread_exit(NULL);
 }
