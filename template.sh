@@ -21,8 +21,7 @@ function __templateEXIT()
   # comando para sair do seu programa
   # echo exit
   echo ^[
-  echo ^[
-  echo ^[
+  echo 5
   echo 2
 }
 
@@ -41,12 +40,12 @@ function __templateSENDMSG()
   # echo "$TO:$MSG"
   echo "1"
 
-  if [ $TO -eq "all" ]
+  if [ $TO = "all" ]
   then
     echo "2"
   else
     echo "0"
-  done
+  fi
   
   echo "i ($MSG)"
 }
