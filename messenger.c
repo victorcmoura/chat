@@ -22,6 +22,7 @@
 #include "string_map.h"
 #include "messenger_utils.h"
 #include "gui_utils.h"
+#include "channel_manager.h"
 
 struct mq_attr attr;
 
@@ -158,10 +159,12 @@ void read_message_menu(char* recipient_queue_name){
 
                     char** online_queues = get_online_queues();
                     int i;
-                    for(i = 0; strlen(online_queues[i]) > i; i++){
-                        char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
-                        format_into_broadcast_protocol(final_message, buffer, queue_name);
-                        send_output(final_message, online_queues[i]);
+                    for(i = 0; strlen(online_queues[i]) > 0; i++){
+                        if(!is_channel_name(online_queues[i])){
+                            char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                            format_into_broadcast_protocol(final_message, buffer, queue_name);
+                            send_output(final_message, online_queues[i]);
+                        }
                     }
                     system("clear");
                     break;
@@ -171,6 +174,8 @@ void read_message_menu(char* recipient_queue_name){
                 }
                 sleep(0.5);
             }        
+        }else if(is_channel_name(recipient_queue_name)){
+
         }else{
             chat_mode = 1;
             strcpy(current_chat, recipient_queue_name);
@@ -266,6 +271,7 @@ int main(void){
     create_client_queue();
     init_message_receiving_thread();
     init_map(10000, 100);
+    init_channel_manager();
     main_menu();
     mq_unlink(queue_name);
     return 0;
