@@ -103,10 +103,11 @@ void* receive_message_thread(void* args){
             // Broadcast from channel
             char* queue_to_insert = (char*) malloc(MAX_QUEUE_NAME_SIZE);
             char* content = (char*) malloc(MAX_MESSAGE_SIZE);
-            unformat_from_channel_broadcast(monitored_queue_name, content, buffer);
+            unformat_from_channel_broadcast(queue_to_insert, content, buffer);
+            // fprintf(fp, "[%s] - [%s]\n", content, queue_to_insert);
             map_insert(queue_to_insert, content);
-            if(strcmp(current_chat, monitored_queue_name) == 0){
-                print_conversation(monitored_queue_name);
+            if(strcmp(current_chat, queue_to_insert) == 0 && chat_mode){
+                print_conversation(queue_to_insert);
             }
             continue;
         }
@@ -142,17 +143,19 @@ void* receive_message_thread(void* args){
                 continue;
             }
 
-            // // Broadcast message to members
-            // char** members = get_members_from_channel(monitored_queue_name);
-            // int len_members = channel->n_members;
-            // int i;
-            // for(i = 0; i < len_members; i++){
-            //     if(strcmp(members[i], queue_name) != 0 && strcmp(members[i], possbile_channel_sender) != 0){
-            //         char* to_broadcast_message = (char*) malloc(MAX_MESSAGE_SIZE);
-            //         format_into_channel_broadcast(to_broadcast_message, backup, members[i]);
-            //         send_output(to_broadcast_message, members[i]);
-            //     }
-            // }
+            // Broadcast message to members
+            char** members = get_members_from_channel(monitored_queue_name);
+            int len_members = channel->n_members;
+            int i;
+            
+            for(i = 0; i < len_members; i++){
+                if(strcmp(members[i], queue_name) != 0 && strcmp(members[i], possbile_channel_sender) != 0){
+                    char* to_broadcast_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                    format_into_channel_broadcast(to_broadcast_message, backup, members[i]);
+                    send_output(to_broadcast_message, members[i]);
+                    
+                }
+            }
 
             map_insert(monitored_queue_name, possbile_channel_content);
             if(chat_mode && strcmp(monitored_queue_name, current_chat) == 0){
