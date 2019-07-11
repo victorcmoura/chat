@@ -175,7 +175,7 @@ void read_message_menu(char* recipient_queue_name){
                 sleep(0.5);
             }        
         }else if(is_channel_name(recipient_queue_name)){
-
+            
         }else{
             chat_mode = 1;
             strcpy(current_chat, recipient_queue_name);
@@ -211,7 +211,7 @@ void read_message_menu(char* recipient_queue_name){
 }
 
 void pre_message_menu(){
-    char* recipient_queue_name = choose_queue();
+    char* recipient_queue_name = choose_queue(queue_name);
     clear_stdin();
     read_message_menu(recipient_queue_name);
     free(recipient_queue_name);

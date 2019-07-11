@@ -1,6 +1,7 @@
 #ifndef GUI_UTILS_H
 #define GUI_UTILS_H
 #include "messenger_utils.h"
+#include "channel_manager.h"
 
 void print_conversation(char* recipient_queue_name){
     system("clear");
@@ -37,7 +38,7 @@ void print_menu_options(){
     printf("\t2 - Exit\n");
 }
 
-char* choose_queue(){
+char* choose_queue(char* my_queue_name){
     char** options = get_online_queues();
 
     printf("Online queues (pick one):\n");
@@ -48,13 +49,14 @@ char* choose_queue(){
     }
 
     printf("\t%d - Broadcast to all\n", index+1);
-    printf("\t%d - Exit\n", index+2);
+    printf("\t%d - Create chat room\n", index+2);
+    printf("\t%d - Back to main menu\n", index+3);
 
     int option;
     do{
         printf(">> ");
         scanf("%d", &option);
-    }while(option < 1 || option > index+2);
+    }while(option < 1 || option > index+3);
 
     int i;
     for(i = 0; strlen(options[i]) > 0; i++){
@@ -68,6 +70,28 @@ char* choose_queue(){
         strcpy(broadcast, "broad_to_all");
         return broadcast;
     }else if(option == index+2){
+        char* room_name = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+        char tmp[MAX_QUEUE_NAME_SIZE];
+        char user_input[MAX_QUEUE_NAME_SIZE] = "";
+        char prefix[10] = "/canal-";
+        strcpy(room_name, prefix);
+        int never_asked = 1;
+        do{
+            if(never_asked){
+                system("clear");
+                printf("Insert the name of your queue: ");
+                never_asked = 0;
+            }else{
+                system("clear");
+                printf("The queue could not be created, try another name: ");
+            }
+            scanf("%s", user_input);
+            strcpy(tmp, prefix);
+            strcat(tmp, user_input);
+        }while(!can_create(tmp));
+        create_channel(tmp, my_queue_name);
+        return NULL;
+    }else if(option == index+3){
         return NULL;
     }
 
