@@ -48,6 +48,7 @@ function __templateSENDMSG()
   fi
   
   echo "i ($MSG)"
+  echo "i ($MSG)"
 }
 
 function __templateBROADCAST()
