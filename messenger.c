@@ -159,7 +159,7 @@ void* receive_message_thread(void* args){
 
             map_insert(monitored_queue_name, possbile_channel_content);
             if(chat_mode && strcmp(monitored_queue_name, current_chat) == 0){
-                system("clear");
+                // system("clear");
                 print_conversation(monitored_queue_name);
             }
             free(possbile_channel_sender);
@@ -184,7 +184,7 @@ void* receive_message_thread(void* args){
 
         map_insert(sender_name, final_message);
         if(chat_mode && strcmp(sender_name, queue_name) != 0 && strcmp(sender_name, current_chat) == 0){
-            system("clear");
+            // system("clear");
             print_conversation(sender_name);
         }
         free(sender_name);
@@ -196,9 +196,9 @@ void* handle_user_input(){
     input_mode = 0;
     int option;
     do{
-        system ("stty -icanon -isig -echo min 1 time 0");
+        // system ("stty -icanon -isig -echo min 1 time 0");
         option = getchar();
-        system ("stty cooked echo -isig");
+        // system ("stty cooked echo -isig");
         if(option == 27){
             should_quit = 1;
             break;
@@ -217,13 +217,13 @@ void read_message_menu(char* recipient_queue_name){
             pthread_t handle_user_input_thread_id;
             pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
             
-            system("clear");
+            // system("clear");
             
             print_broadcast_gui();
 
             while(1){
                 if(input_mode){
-                    system("clear");
+                    // system("clear");
                     print_broadcast_gui();
                     printf(">> ");
                     char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
@@ -238,7 +238,7 @@ void read_message_menu(char* recipient_queue_name){
                             send_output(final_message, online_queues[i]);
                         }
                     }
-                    system("clear");
+                    // system("clear");
                     break;
                 }else if(should_quit){
                     should_quit = 0;
@@ -259,13 +259,13 @@ void read_message_menu(char* recipient_queue_name){
             pthread_t handle_user_input_thread_id;
             pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
             
-            system("clear");
+            // system("clear");
 
             print_conversation(recipient_queue_name);
             
             while(1){
                 if(input_mode){
-                    system("clear");
+                    // system("clear");
                     print_conversation(recipient_queue_name);
                     printf(">> ");
                     char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
@@ -278,7 +278,7 @@ void read_message_menu(char* recipient_queue_name){
                     }
                     send_output(final_message, recipient_queue_name);
                     pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
-                    system("clear");
+                    // system("clear");
                     print_conversation(recipient_queue_name);
                 }else if(should_quit){
                     should_quit = 0;
@@ -316,10 +316,10 @@ void pre_message_menu(){
 
 void main_menu(){
     while(1){
-        system("clear");
+        // system("clear");
         print_menu_options();
 
-        system ("stty -icanon -isig -echo min 1 time 0");
+        // system ("stty -icanon -isig -echo min 1 time 0");
         int option;
         do{
             option = getchar();
@@ -327,14 +327,14 @@ void main_menu(){
                 break;
             }
         }while(1);
-        system ("stty cooked echo -isig");
+        // system ("stty cooked echo -isig");
 
-        system("clear");
+        // system("clear");
         
         if(option == '1'){
             pre_message_menu();
         }else if(option == '2'){
-            system("clear");
+            // system("clear");
             return;
         }
     }

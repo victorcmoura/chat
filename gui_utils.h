@@ -4,7 +4,7 @@
 #include "channel_manager.h"
 
 void print_conversation(char* recipient_queue_name){
-    system("clear");
+    // system("clear");
     char** messages = map_get(recipient_queue_name);
 
     printf("=====> %s Conversation:\n\n", recipient_queue_name);
@@ -18,7 +18,7 @@ void print_conversation(char* recipient_queue_name){
 }
 
 void print_broadcast_gui(){
-    system("clear");
+    // system("clear");
 
     printf("=====> Sending broadcast:\n\n");
 
@@ -78,11 +78,11 @@ char* choose_queue(char* my_queue_name, char* created_queue_string){
         int never_asked = 1;
         do{
             if(never_asked){
-                system("clear");
+                // system("clear");
                 printf("Insert the name of your queue: ");
                 never_asked = 0;
             }else{
-                system("clear");
+                // system("clear");
                 printf("The queue could not be created, try another name: ");
             }
             scanf("%s", user_input);
