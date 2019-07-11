@@ -378,4 +378,22 @@ void destroy_all_of_my_channels(){
     }
 }
 
+int is_member(char* name, char* channel_name){
+    if(!can_join(channel_name)){
+        return 1;
+    }
+    
+    CHANNEL* channel = get_channel(channel_name);
+    
+    if(channel != NULL){
+        return member_exists(channel->members, name);
+    }
+    return 0;
+}
+
+int is_my_channel(char* channel_name){
+    CHANNEL* channel = get_channel(channel_name);
+    return channel != NULL;
+}
+
 #endif

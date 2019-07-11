@@ -38,50 +38,15 @@ void receive_input(char* msg_buffer, char* monitored_queue_name){
     // perror("Input receiving");
 }
 
-void* receive_message_thread(void* args){
-    queue_struct* queue_data = args;
-    char* monitored_queue_name = queue_data->queue_name;
-
-    while(1){
-        char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
-        char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
-        receive_input(buffer, monitored_queue_name);
-        
-        printf("[%s]\n", buffer);
-
-        int is_broad = 0;
-
-        if(is_broadcast(buffer)){
-            is_broad = 1;
-        }
-
-        unformat_from_message_protocol(final_message, buffer);
-    
-        char* sender_name = get_sender_queue_name_from_unformatted_message(final_message);
-
-        if(is_broad){
-            char tmp[MAX_MESSAGE_SIZE] = "Broadcast from ";
-            strcat(tmp, final_message);
-            strcpy(final_message, tmp);
-        }
-
-        map_insert(sender_name, final_message);
-        if(chat_mode && strcmp(sender_name, queue_name) != 0 && strcmp(sender_name, current_chat) == 0){
-            system("clear");
-            print_conversation(sender_name);
-        }
-        free(sender_name);
-    }
-    pthread_exit(NULL);
-}
-
 void* send_message_thread(void* args){
     message_struct* msg_data = args;
     char* peer_queue_name = msg_data->to;
     char* msg_buffer = msg_data->msg_buffer;
 
-    msg_buffer[strlen(msg_buffer)-1] = 0;
-    
+    if(msg_buffer[strlen(msg_buffer)-1] == '\n'){
+        msg_buffer[strlen(msg_buffer)-1] = 0;
+    }
+
     mqd_t peer_queue = mq_open(peer_queue_name, O_WRONLY, 0622, &attr);
     // perror("Opening peer queue");
     mq_send(peer_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
@@ -91,8 +56,10 @@ void* send_message_thread(void* args){
 
     char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
 
+    char* possible_joiner = joiner(msg_buffer);
+
     unformat_from_message_protocol(buffer, msg_buffer);
-    if(strcmp(queue_name, peer_queue_name) != 0){
+    if(strcmp(queue_name, peer_queue_name) != 0 && !is_my_channel(peer_queue_name) && possible_joiner == NULL){
         map_insert(peer_queue_name, buffer);
     }
 
@@ -121,6 +88,105 @@ void send_output(char* msg_buffer, char* peer_queue_name){
 
     pthread_t send_message_thread_id;
     pthread_create(&send_message_thread_id, NULL, (void*) send_message_thread, msg);
+}
+
+void* receive_message_thread(void* args){
+    queue_struct* queue_data = args;
+    char* monitored_queue_name = queue_data->queue_name;
+
+    while(1){
+        char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
+        char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+        receive_input(buffer, monitored_queue_name);
+
+        if(buffer[0] == '#'){
+            // Broadcast from channel
+            char* queue_to_insert = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+            char* content = (char*) malloc(MAX_MESSAGE_SIZE);
+            unformat_from_channel_broadcast(monitored_queue_name, content, buffer);
+            map_insert(queue_to_insert, content);
+            if(strcmp(current_chat, monitored_queue_name) == 0){
+                print_conversation(monitored_queue_name);
+            }
+            continue;
+        }
+
+        char* possible_joiner = joiner(buffer);
+
+        if(possible_joiner != NULL){
+            CHANNEL* channel = get_channel(monitored_queue_name);
+            add_member_in_channel(monitored_queue_name, possible_joiner);
+            continue;
+        }
+
+        char* possible_quitter = quitter(buffer);
+
+        if(possible_quitter != NULL){
+            CHANNEL* channel = get_channel(monitored_queue_name);
+            remove_member_from_channel(monitored_queue_name, possible_quitter);
+            continue;
+        }
+
+        char* possbile_channel_sender = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+        char* possbile_channel_content = (char*) malloc(MAX_MESSAGE_SIZE);
+
+        if(parse_channel_message(buffer, possbile_channel_sender, possbile_channel_content)){
+            char* backup = (char*) malloc(MAX_MESSAGE_SIZE);
+            strcpy(backup, buffer);
+            CHANNEL* channel = get_channel(monitored_queue_name);
+
+            if(!member_exists(channel->members, possbile_channel_sender)){
+                char* refusal = (char*) malloc(MAX_MESSAGE_SIZE);
+                format_refusal(refusal, possbile_channel_sender, monitored_queue_name);
+                send_output(refusal, possbile_channel_sender);
+                continue;
+            }
+
+            // // Broadcast message to members
+            // char** members = get_members_from_channel(monitored_queue_name);
+            // int len_members = channel->n_members;
+            // int i;
+            // for(i = 0; i < len_members; i++){
+            //     if(strcmp(members[i], queue_name) != 0 && strcmp(members[i], possbile_channel_sender) != 0){
+            //         char* to_broadcast_message = (char*) malloc(MAX_MESSAGE_SIZE);
+            //         format_into_channel_broadcast(to_broadcast_message, backup, members[i]);
+            //         send_output(to_broadcast_message, members[i]);
+            //     }
+            // }
+
+            map_insert(monitored_queue_name, possbile_channel_content);
+            if(chat_mode && strcmp(monitored_queue_name, current_chat) == 0){
+                system("clear");
+                print_conversation(monitored_queue_name);
+            }
+            free(possbile_channel_sender);
+            continue;
+        }     
+
+        int is_broad = 0;
+
+        if(is_broadcast(buffer)){
+            is_broad = 1;
+        }
+
+        unformat_from_message_protocol(final_message, buffer);
+    
+        char* sender_name = get_sender_queue_name_from_unformatted_message(final_message);
+
+        if(is_broad){
+            char tmp[MAX_MESSAGE_SIZE] = "Broadcast from ";
+            strcat(tmp, final_message);
+            strcpy(final_message, tmp);
+        }
+
+        map_insert(sender_name, final_message);
+        if(chat_mode && strcmp(sender_name, queue_name) != 0 && strcmp(sender_name, current_chat) == 0){
+            system("clear");
+            print_conversation(sender_name);
+        }
+        free(sender_name);
+    }
+    pthread_exit(NULL);
 }
 
 void* handle_user_input(){
@@ -178,10 +244,11 @@ void read_message_menu(char* recipient_queue_name){
                 sleep(0.5);
             }        
         }else{
-            if(is_channel_name(recipient_queue_name) && can_join(recipient_queue_name)){
+            if(is_channel_name(recipient_queue_name) && !is_member(queue_name, recipient_queue_name)){
                 char* join_final_message = (char*) malloc(MAX_MESSAGE_SIZE);
                 format_into_join_request_protocol(join_final_message, queue_name);
                 send_output(join_final_message, recipient_queue_name);
+                join_channel(recipient_queue_name);
             }
 
             chat_mode = 1;
@@ -201,7 +268,11 @@ void read_message_menu(char* recipient_queue_name){
                     char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
                     char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
                     fgets(buffer, MAX_MESSAGE_SIZE, stdin);
-                    format_into_message_protocol(final_message, recipient_queue_name, buffer, queue_name);
+                    if(is_channel_name(recipient_queue_name)){
+                        format_into_channel_protocol(final_message, recipient_queue_name, buffer, queue_name);
+                    }else{
+                        format_into_message_protocol(final_message, recipient_queue_name, buffer, queue_name);
+                    }
                     send_output(final_message, recipient_queue_name);
                     pthread_create(&handle_user_input_thread_id, NULL, (void*) handle_user_input, NULL);
                     system("clear");
@@ -261,8 +332,6 @@ void main_menu(){
             pre_message_menu();
         }else if(option == '2'){
             system("clear");
-            printf("Exiting...\n");
-            sleep(2);
             return;
         }
     }
