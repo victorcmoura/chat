@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "channel_manager.h
+#include "channel_manager.h"
 
 int main(){
     // Join existing channels
