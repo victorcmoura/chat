@@ -56,7 +56,7 @@ char* choose_queue(char* my_queue_name, char* created_queue_string){
     do{
         printf(">> ");
         scanf("%d", &option);
-    }while(option < 1 || option > index+3);
+    }while(option < 0 || option > index+3);
 
     if(option == 0){
         char* ribasbot = (char*) malloc(MAX_QUEUE_NAME_SIZE);

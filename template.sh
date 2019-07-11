@@ -20,7 +20,7 @@ function __templateEXIT()
 {
   # comando para sair do seu programa
   # echo exit
-  echo ^[
+  echo -e "\^["
   echo 5
   echo 2
 }
