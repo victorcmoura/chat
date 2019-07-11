@@ -38,7 +38,7 @@ void print_menu_options(){
     printf("\t2 - Exit\n");
 }
 
-char* choose_queue(char* my_queue_name){
+char* choose_queue(char* my_queue_name, char* created_queue_string){
     char** options = get_online_queues();
 
     printf("Online queues (pick one):\n");
@@ -90,6 +90,7 @@ char* choose_queue(char* my_queue_name){
             strcat(tmp, user_input);
         }while(!can_create(tmp));
         create_channel(tmp, my_queue_name);
+        strcpy(created_queue_string, tmp);
         return NULL;
     }else if(option == index+3){
         return NULL;

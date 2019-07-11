@@ -369,4 +369,13 @@ void remove_created_channel(char* channel_name){
     }
 }
 
+void destroy_all_of_my_channels(){
+    char** channels = channels_created_list();
+    int n = channel_header.n_channels_created;
+    int i;
+    for(i = 0; i < n; i++){
+        mq_unlink(channels[i]);
+    }
+}
+
 #endif

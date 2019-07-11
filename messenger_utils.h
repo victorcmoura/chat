@@ -11,6 +11,10 @@ typedef struct {
     char* to;
 } message_struct;
 
+typedef struct{
+    char queue_name[MAX_QUEUE_NAME_SIZE];
+} queue_struct;
+
 int is_broadcast(char* msg){
     int index = 0;
     while(msg[index] != ':'){
@@ -55,6 +59,15 @@ void format_into_message_protocol(char* final_message, char* name, char* msg, ch
     strcat(final_message, &queue_name[6]);
     strcat(final_message, marker);
     strcat(final_message, &to[6]);
+    strcat(final_message, marker);
+    strcat(final_message, message);
+}
+
+void format_into_join_request_protocol(char* final_message, char* queue_name){
+    char marker[2] = ":";
+    char message[10] = "JOIN";
+
+    strcpy(final_message, &queue_name[6]);
     strcat(final_message, marker);
     strcat(final_message, message);
 }

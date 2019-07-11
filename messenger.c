@@ -31,18 +31,21 @@ char current_chat[MAX_QUEUE_NAME_SIZE] = {0};
 
 char queue_name[MAX_QUEUE_NAME_SIZE] = "/chat-";
 
-void receive_input(char* msg_buffer){
-    mqd_t client_queue = mq_open(queue_name, O_RDONLY, 0666, &attr);
+void receive_input(char* msg_buffer, char* monitored_queue_name){
+    mqd_t client_queue = mq_open(monitored_queue_name, O_RDONLY, 0666, &attr);
     // perror("Opening client queue");
     mq_receive(client_queue, (char*) msg_buffer, MAX_MESSAGE_SIZE, 0);
     // perror("Input receiving");
 }
 
 void* receive_message_thread(void* args){
+    queue_struct* queue_data = args;
+    char* monitored_queue_name = queue_data->queue_name;
+
     while(1){
         char* buffer = (char*) malloc(MAX_MESSAGE_SIZE);
         char* final_message = (char*) malloc(MAX_MESSAGE_SIZE);
-        receive_input(buffer);
+        receive_input(buffer, monitored_queue_name);
         
         printf("[%s]\n", buffer);
 
@@ -174,9 +177,13 @@ void read_message_menu(char* recipient_queue_name){
                 }
                 sleep(0.5);
             }        
-        }else if(is_channel_name(recipient_queue_name)){
-            
         }else{
+            if(is_channel_name(recipient_queue_name) && can_join(recipient_queue_name)){
+                char* join_final_message = (char*) malloc(MAX_MESSAGE_SIZE);
+                format_into_join_request_protocol(join_final_message, queue_name);
+                send_output(join_final_message, recipient_queue_name);
+            }
+
             chat_mode = 1;
             strcpy(current_chat, recipient_queue_name);
             pthread_t handle_user_input_thread_id;
@@ -210,11 +217,27 @@ void read_message_menu(char* recipient_queue_name){
     }   
 }
 
+void init_message_receiving_thread(char* monitored_queue_name){
+    queue_struct* queue_data = (queue_struct*) malloc(sizeof(queue_struct));
+    strcpy(queue_data->queue_name, monitored_queue_name);
+
+    pthread_t receive_message_thread_id;
+    pthread_create(&receive_message_thread_id, NULL, (void*) receive_message_thread, queue_data);
+}
+
 void pre_message_menu(){
-    char* recipient_queue_name = choose_queue(queue_name);
-    clear_stdin();
-    read_message_menu(recipient_queue_name);
-    free(recipient_queue_name);
+    char created_queue[MAX_QUEUE_NAME_SIZE] = "";
+    char* recipient_queue_name = choose_queue(queue_name, created_queue);
+    
+    if(strlen(created_queue) > 0){
+        clear_stdin();
+        init_message_receiving_thread(created_queue);
+    }else{
+        clear_stdin();
+        read_message_menu(recipient_queue_name);
+        free(recipient_queue_name);
+    }
+    
 }
 
 void main_menu(){
@@ -261,18 +284,14 @@ void set_queue_name(){
     strcat(queue_name, buffer);
 }
 
-void init_message_receiving_thread(){
-    pthread_t receive_message_thread_id;
-    pthread_create(&receive_message_thread_id, NULL, (void*) receive_message_thread, NULL);
-}
-
 int main(void){
     set_queue_name();
     create_client_queue();
-    init_message_receiving_thread();
+    init_message_receiving_thread(queue_name);
     init_map(10000, 100);
     init_channel_manager();
     main_menu();
     mq_unlink(queue_name);
+    destroy_all_of_my_channels();
     return 0;
 }
