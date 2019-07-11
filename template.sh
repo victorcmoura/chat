@@ -48,7 +48,9 @@ function __templateSENDMSG()
   fi
   
   echo "i ($MSG)"
-  echo "i ($MSG)"
+
+  echo -e "\^["
+  echo "0"
 }
 
 function __templateBROADCAST()
