@@ -44,10 +44,10 @@ char* choose_queue(char* my_queue_name, char* created_queue_string){
     printf("Online queues (pick one):\n");
 
     int index = 0;
-    for(index = 0; strlen(options[index]) > 0; index++){
-        printf("\t%d - [%s]\n", index+1, options[index]);
-    }
-
+    // for(index = 0; strlen(options[index]) > 0; index++){
+    //     printf("\t%d - [%s]\n", index+1, options[index]);
+    // }
+    printf("\t%d - Ribasbot\n", index++);
     printf("\t%d - Broadcast to all\n", index+1);
     printf("\t%d - Create chat room\n", index+2);
     printf("\t%d - Back to main menu\n", index+3);
@@ -57,6 +57,12 @@ char* choose_queue(char* my_queue_name, char* created_queue_string){
         printf(">> ");
         scanf("%d", &option);
     }while(option < 1 || option > index+3);
+
+    if(option == 0){
+        char* ribasbot = (char*) malloc(MAX_QUEUE_NAME_SIZE);
+        strcpy(ribasbot, "/chat-ribasbot");
+        return ribasbot;
+    }
 
     int i;
     for(i = 0; strlen(options[i]) > 0; i++){
